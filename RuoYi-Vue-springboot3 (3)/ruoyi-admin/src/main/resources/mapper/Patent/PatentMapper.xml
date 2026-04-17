@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.Patent.mapper.PatentMapper">
+    
+    <resultMap type="Patent" id="PatentResult">
+        <result property="patentId"    column="patent_id"    />
+        <result property="patentCode"    column="patent_code"    />
+        <result property="patentName"    column="patent_name"    />
+        <result property="patentAbstract"    column="abstract"    />
+        <result property="patentType"    column="patent_type"    />
+        <result property="patentLevel"    column="patent_level"    />
+        <result property="applicationDate"    column="application_date"    />
+        <result property="grantDate"    column="grant_date"    />
+        <result property="expiryDate"    column="expiry_date"    />
+        <result property="patentStatus"    column="patent_status"    />
+        <result property="firstAuthorType"    column="first_author_type"    />
+        <result property="firstAuthorId"    column="first_author_id"    />
+        <result property="firstAuthorName"    column="first_author_name"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="departmentName"    column="department_name"    />
+        <result property="attachmentUrl"    column="attachment_url"    />
+    </resultMap>
+
+    <resultMap id="PatentPatentAuthorResult" type="Patent" extends="PatentResult">
+        <collection property="patentAuthorList" ofType="PatentAuthor" column="patent_id" select="selectPatentAuthorList" />
+    </resultMap>
+
+    <resultMap type="PatentAuthor" id="PatentAuthorResult">
+        <result property="authorshipId"    column="authorship_id"    />
+        <result property="patentId"    column="patent_id"    />
+        <result property="authorType"    column="author_type"    />
+        <result property="authorId"    column="author_id"    />
+        <result property="authorName"    column="author_name"    />
+        <result property="authorOrder"    column="author_order"    />
+        <result property="contributionPercent"    column="contribution_percent"    />
+    </resultMap>
+
+    <sql id="selectPatentVo">
+        select p.patent_id, p.patent_code, p.patent_name, p.abstract as patentAbstract, p.patent_type, p.patent_level, 
+               p.application_date, p.grant_date, p.expiry_date, p.patent_status, p.first_author_type, p.first_author_id, 
+               f.name as first_author_name, p.department_id, d.department_name, p.attachment_url 
+        from patent p
+        left join faculty f on p.first_author_id = f.faculty_id and p.first_author_type = 'FACULTY'
+        left join student s on p.first_author_id = s.student_id and p.first_author_type = 'STUDENT'
+        left join department d on p.department_id = d.department_id
+    </sql>
+
+    <select id="selectPatentList" parameterType="Patent" resultMap="PatentPatentAuthorResult">
+        <include refid="selectPatentVo"/>
+        <where>  
+            <if test="patentCode != null  and patentCode != ''"> and p.patent_code = #{patentCode}</if>
+            <if test="patentName != null  and patentName != ''"> and p.patent_name like concat('%', #{patentName}, '%')</if>
+            <if test="patentAbstract != null  and patentAbstract != ''"> and p.abstract = #{patentAbstract}</if>
+            <if test="patentType != null  and patentType != ''"> and p.patent_type = #{patentType}</if>
+            <if test="patentLevel != null  and patentLevel != ''"> and p.patent_level = #{patentLevel}</if>
+            <if test="applicationDate != null "> and p.application_date = #{applicationDate}</if>
+            <if test="grantDate != null "> and p.grant_date = #{grantDate}</if>
+            <if test="expiryDate != null "> and p.expiry_date = #{expiryDate}</if>
+            <if test="patentStatus != null  and patentStatus != ''"> and p.patent_status = #{patentStatus}</if>
+            <if test="firstAuthorType != null  and firstAuthorType != ''"> and p.first_author_type = #{firstAuthorType}</if>
+            <if test="firstAuthorId != null "> and p.first_author_id = #{firstAuthorId}</if>
+            <if test="firstAuthorName != null  and firstAuthorName != ''"> and (f.name like concat('%', #{firstAuthorName}, '%') or s.name like concat('%', #{firstAuthorName}, '%'))</if>
+            <if test="departmentId != null "> and p.department_id = #{departmentId}</if>
+            <if test="attachmentUrl != null  and attachmentUrl != ''"> and p.attachment_url = #{attachmentUrl}</if>
+        </where>
+    </select>
+    
+    <select id="selectPatentByPatentId" parameterType="Long" resultMap="PatentPatentAuthorResult">
+        select p.patent_id, p.patent_code, p.patent_name, p.abstract as patentAbstract, p.patent_type, p.patent_level, 
+               p.application_date, p.grant_date, p.expiry_date, p.patent_status, p.first_author_type, p.first_author_id, 
+               f.name as first_author_name, p.department_id, d.department_name, p.attachment_url
+        from patent p
+        left join faculty f on p.first_author_id = f.faculty_id and p.first_author_type = 'FACULTY'
+        left join student s on p.first_author_id = s.student_id and p.first_author_type = 'STUDENT'
+        left join department d on p.department_id = d.department_id
+        where p.patent_id = #{patentId}
+    </select>
+
+    <select id="selectPatentAuthorList" resultMap="PatentAuthorResult">
+        select pa.authorship_id, pa.patent_id, pa.author_type, pa.author_id, 
+               pa.author_order, pa.contribution_percent,
+               case 
+                   when pa.author_type = 'FACULTY' then f.name
+                   when pa.author_type = 'STUDENT' then s.name
+               end as author_name
+        from patent_author pa
+        left join faculty f on pa.author_id = f.faculty_id and pa.author_type = 'FACULTY'
+        left join student s on pa.author_id = s.student_id and pa.author_type = 'STUDENT'
+        where pa.patent_id = #{patent_id}
+    </select>
+
+    <insert id="insertPatent" parameterType="Patent" useGeneratedKeys="true" keyProperty="patentId">
+        insert into patent
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="patentCode != null and patentCode != ''">patent_code,</if>
+            <if test="patentName != null and patentName != ''">patent_name,</if>
+            <if test="patentAbstract != null">abstract,</if>
+            <if test="patentType != null and patentType != ''">patent_type,</if>
+            <if test="patentLevel != null">patent_level,</if>
+            <if test="applicationDate != null">application_date,</if>
+            <if test="grantDate != null">grant_date,</if>
+            <if test="expiryDate != null">expiry_date,</if>
+            <if test="patentStatus != null">patent_status,</if>
+            <if test="firstAuthorType != null and firstAuthorType != ''">first_author_type,</if>
+            <if test="firstAuthorId != null">first_author_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="attachmentUrl != null">attachment_url,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="patentCode != null and patentCode != ''">#{patentCode},</if>
+            <if test="patentName != null and patentName != ''">#{patentName},</if>
+            <if test="patentAbstract != null">#{patentAbstract},</if>
+            <if test="patentType != null and patentType != ''">#{patentType},</if>
+            <if test="patentLevel != null">#{patentLevel},</if>
+            <if test="applicationDate != null">#{applicationDate},</if>
+            <if test="grantDate != null">#{grantDate},</if>
+            <if test="expiryDate != null">#{expiryDate},</if>
+            <if test="patentStatus != null">#{patentStatus},</if>
+            <if test="firstAuthorType != null and firstAuthorType != ''">#{firstAuthorType},</if>
+            <if test="firstAuthorId != null">#{firstAuthorId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="attachmentUrl != null">#{attachmentUrl},</if>
+         </trim>
+    </insert>
+
+    <update id="updatePatent" parameterType="Patent">
+        update patent
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="patentCode != null and patentCode != ''">patent_code = #{patentCode},</if>
+            <if test="patentName != null and patentName != ''">patent_name = #{patentName},</if>
+            <if test="patentAbstract != null">abstract = #{patentAbstract},</if>
+            <if test="patentType != null and patentType != ''">patent_type = #{patentType},</if>
+            <if test="patentLevel != null">patent_level = #{patentLevel},</if>
+            <if test="applicationDate != null">application_date = #{applicationDate},</if>
+            <if test="grantDate != null">grant_date = #{grantDate},</if>
+            <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
+            <if test="patentStatus != null">patent_status = #{patentStatus},</if>
+            <if test="firstAuthorType != null and firstAuthorType != ''">first_author_type = #{firstAuthorType},</if>
+            <if test="firstAuthorId != null">first_author_id = #{firstAuthorId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="attachmentUrl != null">attachment_url = #{attachmentUrl},</if>
+        </trim>
+        where patent_id = #{patentId}
+    </update>
+
+    <delete id="deletePatentByPatentId" parameterType="Long">
+        delete from patent where patent_id = #{patentId}
+    </delete>
+
+    <delete id="deletePatentByPatentIds" parameterType="String">
+        delete from patent where patent_id in 
+        <foreach item="patentId" collection="array" open="(" separator="," close=")">
+            #{patentId}
+        </foreach>
+    </delete>
+    
+    <delete id="deletePatentAuthorByPatentIds" parameterType="String">
+        delete from patent_author where patent_id in 
+        <foreach item="patentId" collection="array" open="(" separator="," close=")">
+            #{patentId}
+        </foreach>
+    </delete>
+
+    <delete id="deletePatentAuthorByPatentId" parameterType="Long">
+        delete from patent_author where patent_id = #{patentId}
+    </delete>
+
+    <insert id="batchPatentAuthor">
+        insert into patent_author(patent_id, author_type, author_id, author_order, contribution_percent) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.patentId}, #{item.authorType}, #{item.authorId}, #{item.authorOrder}, #{item.contributionPercent})
+        </foreach>
+    </insert>
+</mapper>

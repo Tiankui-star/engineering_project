@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.Paper.mapper.PaperAuthorMapper">
+    
+    <resultMap type="PaperAuthor" id="PaperAuthorResult">
+        <result property="authorshipId"    column="authorship_id"    />
+        <result property="paperId"    column="paper_id"    />
+        <result property="authorType"    column="author_type"    />
+        <result property="authorId"    column="author_id"    />
+        <result property="authorName"    column="author_name"    />
+        <result property="authorOrder"    column="author_order"    />
+        <result property="contributionDescription"    column="contribution_description"    />
+    </resultMap>
+
+    <sql id="selectPaperAuthorVo">
+        select pa.authorship_id, pa.paper_id, pa.author_type, pa.author_id, 
+               case when pa.author_type = 'FACULTY' then f.name else s.name end as author_name,
+               pa.author_order, pa.contribution_description
+        from paper_author pa
+        left join faculty f on pa.author_id = f.faculty_id and pa.author_type = 'FACULTY'
+        left join student s on pa.author_id = s.student_id and pa.author_type = 'STUDENT'
+    </sql>
+
+    <select id="selectPaperAuthorList" parameterType="PaperAuthor" resultMap="PaperAuthorResult">
+        <include refid="selectPaperAuthorVo"/>
+        <where>  
+            <if test="paperId != null "> and pa.paper_id = #{paperId}</if>
+            <if test="authorType != null  and authorType != ''"> and pa.author_type = #{authorType}</if>
+            <if test="authorId != null "> and pa.author_id = #{authorId}</if>
+        </where>
+        order by pa.author_order
+    </select>
+    
+    <select id="selectPaperAuthorsByPaperId" parameterType="Long" resultMap="PaperAuthorResult">
+        <include refid="selectPaperAuthorVo"/>
+        where pa.paper_id = #{paperId}
+        order by pa.author_order
+    </select>
+    
+    <select id="selectPaperAuthorByAuthorshipId" parameterType="Long" resultMap="PaperAuthorResult">
+        <include refid="selectPaperAuthorVo"/>
+        where pa.authorship_id = #{authorshipId}
+    </select>
+
+    <insert id="insertPaperAuthor" parameterType="PaperAuthor" useGeneratedKeys="true" keyProperty="authorshipId">
+        insert into paper_author
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="paperId != null">paper_id,</if>
+            <if test="authorType != null and authorType != ''">author_type,</if>
+            <if test="authorId != null">author_id,</if>
+            <if test="authorOrder != null">author_order,</if>
+            <if test="contributionDescription != null">contribution_description,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="paperId != null">#{paperId},</if>
+            <if test="authorType != null and authorType != ''">#{authorType},</if>
+            <if test="authorId != null">#{authorId},</if>
+            <if test="authorOrder != null">#{authorOrder},</if>
+            <if test="contributionDescription != null">#{contributionDescription},</if>
+         </trim>
+    </insert>
+
+    <insert id="batchInsertPaperAuthor">
+        insert into paper_author (paper_id, author_type, author_id, author_order, contribution_description) values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.paperId}, #{item.authorType}, #{item.authorId}, #{item.authorOrder}, #{item.contributionDescription})
+        </foreach>
+    </insert>
+
+    <update id="updatePaperAuthor" parameterType="PaperAuthor">
+        update paper_author
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="paperId != null">paper_id = #{paperId},</if>
+            <if test="authorType != null and authorType != ''">author_type = #{authorType},</if>
+            <if test="authorId != null">author_id = #{authorId},</if>
+            <if test="authorOrder != null">author_order = #{authorOrder},</if>
+            <if test="contributionDescription != null">contribution_description = #{contributionDescription},</if>
+        </trim>
+        where authorship_id = #{authorshipId}
+    </update>
+
+    <delete id="deletePaperAuthorByAuthorshipId" parameterType="Long">
+        delete from paper_author where authorship_id = #{authorshipId}
+    </delete>
+
+    <delete id="deletePaperAuthorByPaperId" parameterType="Long">
+        delete from paper_author where paper_id = #{paperId}
+    </delete>
+
+    <delete id="deletePaperAuthorByAuthorshipIds" parameterType="String">
+        delete from paper_author where authorship_id in 
+        <foreach item="authorshipId" collection="array" open="(" separator="," close=")">
+            #{authorshipId}
+        </foreach>
+    </delete>
+</mapper>

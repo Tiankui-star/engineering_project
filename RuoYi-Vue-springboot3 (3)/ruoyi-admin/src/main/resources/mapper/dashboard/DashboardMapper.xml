@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.web.mapper.DashboardMapper">
+    
+    <resultMap type="com.ruoyi.web.domain.StatisticsView" id="StatisticsViewResult">
+        <result property="statId"    column="stat_id"    />
+        <result property="dimensionType"    column="dimension_type"    />
+        <result property="dimensionId"    column="dimension_id"    />
+        <result property="metricName"    column="metric_name"    />
+        <result property="metricValue"    column="metric_value"    />
+        <result property="updateDate"    column="update_date"    />
+    </resultMap>
+
+    <!-- 查询全局统计指标 -->
+    <select id="selectGlobalMetric" parameterType="String" resultType="BigDecimal">
+        SELECT metric_value 
+        FROM STATISTICS_VIEW 
+        WHERE dimension_type = 'GLOBAL' 
+          AND metric_name = #{metricName}
+        LIMIT 1
+    </select>
+
+    <!-- 查询院系统计指标 -->
+    <select id="selectDepartmentMetric" parameterType="Map" resultType="BigDecimal">
+        SELECT metric_value 
+        FROM STATISTICS_VIEW 
+        WHERE dimension_type = 'DEPARTMENT' 
+          AND dimension_id = #{departmentId}
+          AND metric_name = #{metricName}
+        LIMIT 1
+    </select>
+
+    <!-- 查询所有全局统计指标 -->
+    <select id="selectAllGlobalMetrics" resultMap="StatisticsViewResult">
+        SELECT stat_id, dimension_type, dimension_id, metric_name, metric_value, update_date
+        FROM STATISTICS_VIEW
+        WHERE dimension_type = 'GLOBAL'
+        ORDER BY stat_id
+    </select>
+
+    <!-- 查询院系统计指标列表 -->
+    <select id="selectDepartmentMetrics" parameterType="Integer" resultMap="StatisticsViewResult">
+        SELECT stat_id, dimension_type, dimension_id, metric_name, metric_value, update_date
+        FROM STATISTICS_VIEW
+        WHERE dimension_type = 'DEPARTMENT' 
+          AND dimension_id = #{departmentId}
+        ORDER BY stat_id
+    </select>
+
+    <!-- 插入或更新统计指标 -->
+    <insert id="upsertStatistic" parameterType="com.ruoyi.web.domain.StatisticsView">
+        INSERT INTO STATISTICS_VIEW (dimension_type, dimension_id, metric_name, metric_value, update_date)
+        VALUES (#{dimensionType}, #{dimensionId}, #{metricName}, #{metricValue}, NOW())
+        ON DUPLICATE KEY UPDATE 
+            metric_value = #{metricValue},
+            update_date = NOW()
+    </insert>
+
+    <!-- 删除指定维度的统计数据 -->
+    <delete id="deleteByDimension" parameterType="Map">
+        DELETE FROM STATISTICS_VIEW 
+        WHERE dimension_type = #{dimensionType}
+        <if test="dimensionId != null">
+            AND dimension_id = #{dimensionId}
+        </if>
+    </delete>
+
+    <!-- 查询教师职称分布 -->
+    <select id="selectFacultyTitleDistribution" resultType="Map">
+        SELECT 
+            CASE title
+                WHEN '1' THEN '教授'
+                WHEN '2' THEN '副教授'
+                WHEN '3' THEN '讲师'
+                WHEN '4' THEN '助理教授'
+                WHEN '5' THEN '研究员'
+                ELSE COALESCE(title, '其他')
+            END as name,
+            COUNT(*) as value
+        FROM FACULTY
+        WHERE title IS NOT NULL
+        GROUP BY title
+        ORDER BY value DESC
+    </select>
+
+    <!-- 查询学生学籍状态分布 -->
+    <select id="selectStudentStatusDistribution" resultType="Map">
+        SELECT status as name, COUNT(*) as value
+        FROM STUDENT
+        WHERE status IS NOT NULL
+        GROUP BY status
+        ORDER BY value DESC
+    </select>
+
+    <!-- 查询论文年度趋势 -->
+    <select id="selectPaperYearlyTrend" resultType="Map">
+        SELECT 
+            YEAR(publication_date) as year,
+            COUNT(*) as value
+        FROM ACADEMIC_PAPER
+        WHERE publication_date IS NOT NULL
+        GROUP BY YEAR(publication_date)
+        ORDER BY year
+    </select>
+
+    <!-- 查询项目资金年度趋势 -->
+    <select id="selectFundingYearlyTrend" resultType="Map">
+        SELECT 
+            YEAR(allocation_date) as year,
+            SUM(amount) as value
+        FROM FUNDING_RECORD
+        WHERE allocation_date IS NOT NULL
+        GROUP BY YEAR(allocation_date)
+        ORDER BY year
+    </select>
+
+    <!-- 查询院系统计对比 -->
+    <select id="selectDepartmentComparison" resultType="Map">
+        SELECT 
+            d.department_name as departmentName,
+            COUNT(DISTINCT f.faculty_id) as facultyCount,
+            COUNT(DISTINCT s.student_id) as studentCount,
+            COUNT(DISTINCT ap.paper_id) as paperCount,
+            COUNT(DISTINCT pat.patent_id) as patentCount,
+            COUNT(DISTINCT rp.project_id) as projectCount
+        FROM DEPARTMENT d
+        LEFT JOIN FACULTY f ON d.department_id = f.department_id
+        LEFT JOIN STUDENT s ON d.department_id = s.department_id
+        LEFT JOIN ACADEMIC_PAPER ap ON d.department_id = ap.department_id
+        LEFT JOIN PATENT pat ON d.department_id = pat.department_id
+        LEFT JOIN RESEARCH_PROJECT rp ON d.department_id = rp.department_id
+        GROUP BY d.department_id, d.department_name
+        ORDER BY d.department_id
+    </select>
+
+    <!-- 查询项目级别分布 -->
+    <select id="selectProjectLevelDistribution" resultType="Map">
+        SELECT project_level as name, COUNT(*) as value
+        FROM RESEARCH_PROJECT
+        WHERE project_level IS NOT NULL
+        GROUP BY project_level
+        ORDER BY value DESC
+    </select>
+
+    <!-- 查询专利类型分布 -->
+    <select id="selectPatentTypeDistribution" resultType="Map">
+        SELECT patent_type as name, COUNT(*) as value
+        FROM PATENT
+        WHERE patent_type IS NOT NULL
+        GROUP BY patent_type
+        ORDER BY value DESC
+    </select>
+
+    <!-- 统计表记录数 -->
+    <select id="countTable" parameterType="String" resultType="BigDecimal">
+        SELECT COUNT(*) FROM ${tableName}
+    </select>
+
+    <!-- 统计某列的总和 -->
+    <select id="sumColumn" parameterType="Map" resultType="BigDecimal">
+        SELECT COALESCE(SUM(${columnName}), 0) FROM ${tableName}
+    </select>
+
+</mapper>
