@@ -27,7 +27,7 @@ CREATE TABLE `DEPARTMENT` (
     `department_name` VARCHAR(100) NOT NULL COMMENT '院系名称',
     `head_faculty_id` BIGINT DEFAULT NULL COMMENT '系主任ID（关联faculty.faculty_id）',
     `description` TEXT COMMENT '简介',
-    FOREIGN KEY (`head_faculty_id`) REFERENCES `FACULTY`(`faculty_id`) ON DELETE SET NULL
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学院下属院系信息';
 
 -- ==========================================================
@@ -677,3 +677,8 @@ BEGIN
 END //
 
 DELIMITER ;
+ALTER TABLE `DEPARTMENT`
+    ADD CONSTRAINT `fk_department_head_faculty`
+        FOREIGN KEY (`head_faculty_id`)
+            REFERENCES `FACULTY`(`faculty_id`)
+            ON DELETE SET NULL;
