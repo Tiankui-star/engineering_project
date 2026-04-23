@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.Paper.mapper.AcademicPaperMapper">
+    
+    <resultMap type="AcademicPaper" id="AcademicPaperResult">
+        <result property="paperId"    column="paper_id"    />
+        <result property="paperTitle"    column="paper_title"    />
+        <result property="paperAbstract"    column="abstract"    />
+        <result property="journalName"    column="journal_name"    />
+        <result property="volumeIssue"    column="volume_issue"    />
+        <result property="pageNumbers"    column="page_numbers"    />
+        <result property="publicationDate"    column="publication_date"    />
+        <result property="publicationLevel"    column="publication_level"    />
+        <result property="doi"    column="doi"    />
+        <result property="citationCount"    column="citation_count"    />
+        <result property="firstAuthorType"    column="first_author_type"    />
+        <result property="firstAuthorId"    column="first_author_id"    />
+        <result property="firstAuthorName"    column="first_author_name"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="departmentName"    column="department_name"    />
+    </resultMap>
+
+    <sql id="selectAcademicPaperVo">
+        select p.paper_id, p.paper_title, p.abstract, p.journal_name, p.volume_issue, p.page_numbers, 
+               p.publication_date, p.publication_level, p.doi, p.citation_count, p.first_author_type, 
+               p.first_author_id, f.name as first_author_name, p.department_id, d.department_name
+        from academic_paper p
+        left join faculty f on p.first_author_id = f.faculty_id and p.first_author_type = 'FACULTY'
+        left join student s on p.first_author_id = s.student_id and p.first_author_type = 'STUDENT'
+        left join department d on p.department_id = d.department_id
+    </sql>
+
+    <select id="selectAcademicPaperList" parameterType="AcademicPaper" resultMap="AcademicPaperResult">
+        <include refid="selectAcademicPaperVo"/>
+        <where>  
+            <if test="paperTitle != null  and paperTitle != ''"> and p.paper_title like concat('%', #{paperTitle}, '%')</if>
+            <if test="paperAbstract != null  and paperAbstract != ''"> and p.abstract like concat('%', #{paperAbstract}, '%')</if>
+            <if test="journalName != null  and journalName != ''"> and p.journal_name like concat('%', #{journalName}, '%')</if>
+            <if test="volumeIssue != null  and volumeIssue != ''"> and p.volume_issue = #{volumeIssue}</if>
+            <if test="pageNumbers != null  and pageNumbers != ''"> and p.page_numbers = #{pageNumbers}</if>
+            <if test="publicationDate != null "> and p.publication_date = #{publicationDate}</if>
+            <if test="publicationLevel != null  and publicationLevel != ''"> and p.publication_level = #{publicationLevel}</if>
+            <if test="doi != null  and doi != ''"> and p.doi = #{doi}</if>
+            <if test="firstAuthorType != null  and firstAuthorType != ''"> and p.first_author_type = #{firstAuthorType}</if>
+            <if test="firstAuthorId != null "> and p.first_author_id = #{firstAuthorId}</if>
+            <if test="departmentId != null "> and p.department_id = #{departmentId}</if>
+            <if test="authorUserId != null "> and p.paper_id in (select pa.paper_id from paper_author pa where pa.author_id = #{authorUserId})</if>
+        </where>
+    </select>
+    
+    <select id="selectAcademicPaperByPaperId" parameterType="Long" resultMap="AcademicPaperResult">
+        <include refid="selectAcademicPaperVo"/>
+        where p.paper_id = #{paperId}
+    </select>
+
+    <insert id="insertAcademicPaper" parameterType="AcademicPaper" useGeneratedKeys="true" keyProperty="paperId">
+        insert into academic_paper
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="paperTitle != null and paperTitle != ''">paper_title,</if>
+            <if test="paperAbstract != null">abstract,</if>
+            <if test="journalName != null">journal_name,</if>
+            <if test="volumeIssue != null">volume_issue,</if>
+            <if test="pageNumbers != null">page_numbers,</if>
+            <if test="publicationDate != null">publication_date,</if>
+            <if test="publicationLevel != null">publication_level,</if>
+            <if test="doi != null">doi,</if>
+            <if test="citationCount != null">citation_count,</if>
+            <if test="firstAuthorType != null and firstAuthorType != ''">first_author_type,</if>
+            <if test="firstAuthorId != null">first_author_id,</if>
+            <if test="departmentId != null">department_id,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="paperTitle != null and paperTitle != ''">#{paperTitle},</if>
+            <if test="paperAbstract != null">#{paperAbstract},</if>
+            <if test="journalName != null">#{journalName},</if>
+            <if test="volumeIssue != null">#{volumeIssue},</if>
+            <if test="pageNumbers != null">#{pageNumbers},</if>
+            <if test="publicationDate != null">#{publicationDate},</if>
+            <if test="publicationLevel != null">#{publicationLevel},</if>
+            <if test="doi != null">#{doi},</if>
+            <if test="citationCount != null">#{citationCount},</if>
+            <if test="firstAuthorType != null and firstAuthorType != ''">#{firstAuthorType},</if>
+            <if test="firstAuthorId != null">#{firstAuthorId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAcademicPaper" parameterType="AcademicPaper">
+        update academic_paper
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="paperTitle != null and paperTitle != ''">paper_title = #{paperTitle},</if>
+            <if test="paperAbstract != null">abstract = #{paperAbstract},</if>
+            <if test="journalName != null">journal_name = #{journalName},</if>
+            <if test="volumeIssue != null">volume_issue = #{volumeIssue},</if>
+            <if test="pageNumbers != null">page_numbers = #{pageNumbers},</if>
+            <if test="publicationDate != null">publication_date = #{publicationDate},</if>
+            <if test="publicationLevel != null">publication_level = #{publicationLevel},</if>
+            <if test="doi != null">doi = #{doi},</if>
+            <if test="citationCount != null">citation_count = #{citationCount},</if>
+            <if test="firstAuthorType != null and firstAuthorType != ''">first_author_type = #{firstAuthorType},</if>
+            <if test="firstAuthorId != null">first_author_id = #{firstAuthorId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+        </trim>
+        where paper_id = #{paperId}
+    </update>
+
+    <delete id="deleteAcademicPaperByPaperId" parameterType="Long">
+        delete from academic_paper where paper_id = #{paperId}
+    </delete>
+
+    <delete id="deleteAcademicPaperByPaperIds" parameterType="String">
+        delete from academic_paper where paper_id in 
+        <foreach item="paperId" collection="array" open="(" separator="," close=")">
+            #{paperId}
+        </foreach>
+    </delete>
+</mapper>
