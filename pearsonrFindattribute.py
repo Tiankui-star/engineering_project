@@ -4,7 +4,7 @@ import os
 
 
 data_folder = 'D:\\industrial\\采集原始数据\\processData'
-y_file = 'D:\\industrial\\采集原始数据\\processData\\#4发电机有功功率362.csv'
+y_file = 'D:\\industrial\\采集原始数据\\processData\\机组实际负荷 366.csv'
 out_path = 'D:\\industrial\\采集原始数据\\correlation_analysis.xlsx'
 
 
