@@ -3,8 +3,8 @@ import glob
 import os
 
 
-data_folder = 'D:\\industrial\\采集原始数据\\processData'
-y_file = 'D:\\industrial\\采集原始数据\\processData\\机组实际负荷 366.csv'
+data_folder = 'D:\\industrial\\采集原始数据\\deletetime'
+y_file = 'D:\\industrial\\采集原始数据\\deletetime\\机组实际负荷 366.csv'
 out_path = 'D:\\industrial\\采集原始数据\\correlation_analysis.xlsx'
 
 
@@ -42,14 +42,14 @@ for file in other_files:
     # 加载X数据
     x_data = load_csv_data(file)
     x_data.columns = ['timestamp', 'x_value']
-
+    print(f"Y数据前5行:\n{x_data.head()}")
     merged = pd.merge(y_data, x_data, on='timestamp', how='inner')
 
     data_points = len(merged)
     print(f"  对齐数据点: {data_points}")
 
-    if data_points < 3:
-        print(f"  警告: 数据点不足3个，无法计算有效相关系数")
+    if data_points < 5000:
+        print(f"  警告: 数据点不足30000个，无法计算有效相关系数")
         corr = None
         p_value = None
     else:
